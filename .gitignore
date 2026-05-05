@@ -1,0 +1,6 @@
+build/
+bin/
+.local/
+*.tar.gz
+.DS_Store
+.vscode/

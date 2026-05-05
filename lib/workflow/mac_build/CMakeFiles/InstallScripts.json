@@ -1,0 +1,16 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/kernel/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/util/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/manager/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/protocol/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/factory/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/nameservice/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/server/cmake_install.cmake",
+		"/Users/lee1y/Desktop/Industrial-Cloud-Storage-System/workflow/mac_build/src/client/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

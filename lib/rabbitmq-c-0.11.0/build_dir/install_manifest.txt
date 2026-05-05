@@ -1,0 +1,13 @@
+/Users/lee1y/.local/pb320/lib/cmake/rabbitmq-c/rabbitmq-c-config.cmake
+/Users/lee1y/.local/pb320/lib/cmake/rabbitmq-c/rabbitmq-c-config-version.cmake
+/Users/lee1y/.local/pb320/lib/cmake/rabbitmq-c/rabbitmq-targets.cmake
+/Users/lee1y/.local/pb320/lib/cmake/rabbitmq-c/rabbitmq-targets-release.cmake
+/Users/lee1y/.local/pb320/lib/pkgconfig/librabbitmq.pc
+/Users/lee1y/.local/pb320/lib/librabbitmq.4.5.0.dylib
+/Users/lee1y/.local/pb320/lib/librabbitmq.4.dylib
+/Users/lee1y/.local/pb320/lib/librabbitmq.dylib
+/Users/lee1y/.local/pb320/lib/librabbitmq.a
+/Users/lee1y/.local/pb320/include/amqp.h
+/Users/lee1y/.local/pb320/include/amqp_framing.h
+/Users/lee1y/.local/pb320/include/amqp_tcp_socket.h
+/Users/lee1y/.local/pb320/include/amqp_ssl_socket.h

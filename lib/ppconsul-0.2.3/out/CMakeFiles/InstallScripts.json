@@ -1,0 +1,19 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/ext/json11/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/src/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/unittests/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/consul/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/agent/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/catalog/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/kv/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/sessions/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/status/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/consul-get/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/tests/doc_examples/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

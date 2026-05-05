@@ -1,0 +1,10 @@
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/libprotobuf-lite.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/libprotobuf.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/libprotoc.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/protoc.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/edit_cache.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/rebuild_cache.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/list_install_components.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/install.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/install/local.dir
+/Users/lee1y/Desktop/CloudDisk_v5/lib/protobuf-3.20.1/out/CMakeFiles/install/strip.dir

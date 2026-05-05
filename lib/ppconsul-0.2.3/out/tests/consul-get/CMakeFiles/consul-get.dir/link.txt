@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -fPIC -ftemplate-depth=256 -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names "CMakeFiles/consul-get.dir/consul_get.cpp.o" -o ../../output/consul-get  -Wl,-rpath,/Users/lee1y/Desktop/CloudDisk_v5/lib/ppconsul-0.2.3/out/output ../../output/libppconsul.0.1.dylib

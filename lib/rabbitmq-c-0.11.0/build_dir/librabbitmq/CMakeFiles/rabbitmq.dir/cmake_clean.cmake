@@ -1,0 +1,40 @@
+file(REMOVE_RECURSE
+  ".4"
+  "CMakeFiles/rabbitmq.dir/amqp_api.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_api.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_connection.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_connection.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_consumer.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_consumer.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_framing.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_framing.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_hostcheck.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_hostcheck.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_mem.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_mem.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl_bio.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl_bio.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl_hostname_validation.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_openssl_hostname_validation.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_socket.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_socket.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_table.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_table.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_tcp_socket.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_tcp_socket.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_time.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_time.c.o.d"
+  "CMakeFiles/rabbitmq.dir/amqp_url.c.o"
+  "CMakeFiles/rabbitmq.dir/amqp_url.c.o.d"
+  "librabbitmq.4.5.0.dylib"
+  "librabbitmq.4.dylib"
+  "librabbitmq.dylib"
+  "librabbitmq.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/rabbitmq.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

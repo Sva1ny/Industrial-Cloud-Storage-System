@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../output/libjson11.a CMakeFiles/json11.dir/json11.cpp.o
+/usr/bin/ranlib ../../output/libjson11.a

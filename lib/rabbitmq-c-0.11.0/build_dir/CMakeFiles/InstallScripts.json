@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/rabbitmq-c-0.11.0/build_dir/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/rabbitmq-c-0.11.0/build_dir/librabbitmq/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,16 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/kernel/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/util/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/manager/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/protocol/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/factory/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/nameservice/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/server/cmake_install.cmake",
+		"/Users/lee1y/Desktop/CloudDisk_v5/lib/workflow/out/src/client/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
