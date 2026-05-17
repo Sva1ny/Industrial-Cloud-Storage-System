@@ -1,6 +1,34 @@
+# Build outputs
 build/
-bin/
-.local/
-*.tar.gz
-.DS_Store
+build2/
+
+# Compiled binaries
+server
+UserService
+backup
+backend/user_service
+backend/backup
+
+# IDE / editors
 .vscode/
+.idea/
+.cursor/
+
+# macOS
+.DS_Store
+*.app
+
+# Test uploads & screenshots
+files/
+screenshot_*.png
+
+# Generated config (contains OSS keys, DB URLs, etc.)
+Config.h
+
+# Local
+.local/
+bin/
+
+# Third-party archives (keep extracted dirs)
+*.tar.gz
+*.zip

@@ -40,6 +40,13 @@
     <form action='#' method="post" enctype="multipart/form-data">
       <input id="file" name="file" type="file" class="file" data-msg-placeholder="choose a file">
     </form>
+    <script>
+    $('#file').on('fileuploaded', function(event, data, previewId, index) {
+        if (data.response.success) {
+            window.location.href = '/static/view/home.html';
+        }
+    });
+    </script>
   </div>
 </body>
 

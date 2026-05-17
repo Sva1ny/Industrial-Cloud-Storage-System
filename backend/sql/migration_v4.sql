@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS tbl_favorite (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    uid INT NOT NULL,
+    file_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_uid_file (uid, file_id),
+    FOREIGN KEY (uid) REFERENCES tbl_user(uid) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

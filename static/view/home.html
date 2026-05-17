@@ -1,7 +1,7 @@
 <html>
 
 <head>
-  <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+  <script src="/file/upload_files/jquery-3.2.1.min.js"></script>
   <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
     crossorigin="anonymous">
@@ -20,8 +20,9 @@
 <body style="width:100%;height:100%">
   <div style="width:100%;height:100%;margin:0 0 10px 0;text-align: center;">
     <div style="font-size:20px;font-weight:bold;
-                margin:0;background: rgb(195, 228, 250);height:32px;">
-      HomePage of Clouddisk
+                margin:0;background: rgb(195, 228, 250);height:32px;display:flex;align-items:center;justify-content:center;">
+      <span style="flex:1;">HomePage of Clouddisk</span>
+      <button onclick="logout()" style="margin-right:10px;height:24px;font-size:14px;">Logout</button>
     </div>
     <table style="height:100%;width:100%;text-align: left;border-width: 2px; border-color: lightslategrey;">
       <tbody>
@@ -56,6 +57,9 @@
                   </tr>
                 </thead>
               </table>
+              <div style="text-align:center;margin:10px;">
+                <button id="loadmore" class="btn btn-default" onclick="loadMore()" style="display:none;">load more</button>
+              </div>
             </div>
           </td>
         </tr>
@@ -86,12 +90,21 @@
     });
   }
 
+  var fileOffset = 0;
+  var PAGE_SIZE = 15;
+
   function updateFileList() {
+    fileOffset = 0;
+    document.getElementById('filetbl').innerHTML =
+      '<thead style="height:50px;border:1px;"><tr style="height:50px;border:1px;">' +
+      '<th>filehash</th><th>filename</th><th>filesize</th>' +
+      '<th>updatetime</th><th>lastupdate</th><th>operation</th></tr></thead>';
     $.ajax({
       url: "/file/query?" + queryParams(),
       type: "POST",
       data: {
-        limit: 15
+        limit: PAGE_SIZE,
+        offset: 0
       },
       error: function (jqXHR, textStatus, errorThrown) {
         if (textStatus == "error") {
@@ -127,11 +140,119 @@
           cell.innerHTML = data[i].LastUpdated;
 
           cell = x.insertCell();
-          cell.innerHTML = '<button class="btn btn-success" ' +
-            'style="height:30px;margin:5px 0;"' +
-            'onClick = "downloadFile(\'/file/download' +
-            '?filename=' + data[i].FileName + '&filehash=' + data[i].FileHash + '&'  + queryParams() + '\')">download</button>';
+          var btn = document.createElement("button");
+          btn.className = "btn btn-success";
+          btn.style.cssText = "height:30px;margin:5px 0;";
+          btn.textContent = "download";
+          btn.onclick = (function(fname, fhash) {
+            return function() {
+              var url = '/file/download?filename=' + encodeURIComponent(fname)
+                + '&filehash=' + encodeURIComponent(fhash)
+                + '&' + queryParams();
+              var iframe = document.createElement("iframe");
+              iframe.style.display = "none";
+              iframe.src = url;
+              document.body.appendChild(iframe);
+            };
+          })(data[i].FileName, data[i].FileHash);
+          cell.appendChild(btn);
+
+          var delBtn = document.createElement("button");
+          delBtn.className = "btn btn-danger";
+          delBtn.style.cssText = "height:30px;margin:5px 2px;";
+          delBtn.textContent = "delete";
+          delBtn.onclick = (function(fname) {
+            return function() {
+              if (!confirm("Delete " + fname + "?")) return;
+              $.ajax({
+                url: "/file/delete?" + queryParams(),
+                type: "POST",
+                data: { filename: fname },
+                success: function() { location.reload(); },
+                error: function() { alert("delete failed"); }
+              });
+            };
+          })(data[i].FileName);
+          cell.appendChild(delBtn);
         }
+        fileOffset = data.length;
+        document.getElementById('loadmore').style.display =
+          data.length >= PAGE_SIZE ? 'block' : 'none';
+      }
+    });
+  }
+
+  function loadMore() {
+    $.ajax({
+      url: "/file/query?" + queryParams(),
+      type: "POST",
+      data: {
+        limit: PAGE_SIZE,
+        offset: fileOffset
+      },
+      success: function (body) {
+        if (!body) return;
+        var data = JSON.parse(body);
+        if (!data || data.length <= 0) {
+          document.getElementById('loadmore').style.display = 'none';
+          return;
+        }
+        for (var i = 0; i < data.length; i++) {
+          var x = document.getElementById('filetbl').insertRow();
+          var cell = x.insertCell();
+          cell.innerHTML = data[i].FileHash.substr(0, 20)+"...";
+
+          cell = x.insertCell();
+          cell.innerHTML = data[i].FileName;
+
+          cell = x.insertCell();
+          cell.innerHTML = data[i].FileSize;
+
+          cell = x.insertCell();
+          cell.innerHTML = data[i].UploadAt;
+
+          cell = x.insertCell();
+          cell.innerHTML = data[i].LastUpdated;
+
+          cell = x.insertCell();
+          var dlBtn = document.createElement("button");
+          dlBtn.className = "btn btn-success";
+          dlBtn.style.cssText = "height:30px;margin:5px 0;";
+          dlBtn.textContent = "download";
+          dlBtn.onclick = (function(fname, fhash) {
+            return function() {
+              var url = '/file/download?filename=' + encodeURIComponent(fname)
+                + '&filehash=' + encodeURIComponent(fhash)
+                + '&' + queryParams();
+              var iframe = document.createElement("iframe");
+              iframe.style.display = "none";
+              iframe.src = url;
+              document.body.appendChild(iframe);
+            };
+          })(data[i].FileName, data[i].FileHash);
+          cell.appendChild(dlBtn);
+
+          var delBtn = document.createElement("button");
+          delBtn.className = "btn btn-danger";
+          delBtn.style.cssText = "height:30px;margin:5px 2px;";
+          delBtn.textContent = "delete";
+          delBtn.onclick = (function(fname) {
+            return function() {
+              if (!confirm("Delete " + fname + "?")) return;
+              $.ajax({
+                url: "/file/delete?" + queryParams(),
+                type: "POST",
+                data: { filename: fname },
+                success: function() { location.reload(); },
+                error: function() { alert("delete failed"); }
+              });
+            };
+          })(data[i].FileName);
+          cell.appendChild(delBtn);
+        }
+        fileOffset += data.length;
+        document.getElementById('loadmore').style.display =
+          data.length >= PAGE_SIZE ? 'block' : 'none';
       }
     });
   }
@@ -140,31 +261,12 @@
     window.location.href = '/file/upload?' + queryParams();
   }
 
-  function downloadFile(durl) {
-    $.ajax({
-      url: durl,
-      type: "GET",
-      error: function (jqXHR, textStatus, errorThrown) {
-        if (textStatus == "error") {
-          alert(textStatus + " : " + errorThrown);
-        } else {
-          alert(textStatus);
-        }
-      },
-      success: function (body, textStatus, jqXHR) {
-        try {
-          alert("download from:\n" + body);
-          var elemIF = document.createElement("iframe");
-          elemIF.src = body;
-          elemIF.style.display = "none";
-          document.body.appendChild(elemIF);
-          
-        } catch (e) {
-          alert(e);
-        }
-      }
-    });
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    window.location.href = '/static/view/signin.html';
   }
+
 </script>
 
 </html>

@@ -10,6 +10,8 @@
 
 #include "CryptoUtil.h"
 #include "User.h"
+#include "Util.h"
+#include "Config.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -18,7 +20,7 @@ using namespace srpc;
 
 using ppconsul::Consul;
 
-static const std::string MYSQL_URL = "mysql://root:1234@localhost/test";
+static const std::string MYSQL_URL = mysql_url();
 static const int RETRY_MAX = 3;
 
 static WFFacilities::WaitGroup g_waitGroup{ 1 };
@@ -40,9 +42,9 @@ public:
         string salt = CryptoUtil::generate_salt();
         string hashcode = CryptoUtil::hash_password(password, salt);
         string sql = "INSERT INTO tbl_user (username, password, salt) VALUES ('"
-            + username + "', '"
-            + hashcode + "', '"
-            + salt + "')";
+            + mysql_escape(username) + "', '"
+            + mysql_escape(hashcode) + "', '"
+            + mysql_escape(salt) + "')";
         cout << "[SQL] " << sql << endl;   /* 日志 */
 
         WFMySQLTask* mysqlTask = WFTaskFactory::create_mysql_task(MYSQL_URL, RETRY_MAX, [resp](WFMySQLTask* task)
@@ -68,7 +70,7 @@ public:
         const string& password = req->password();
         // 2. 构建SQL语句
         string sql = "SELECT * FROM tbl_user WHERE username='"
-            + username + "' AND tomb=0";
+            + mysql_escape(username) + "' AND tomb=0";
         cout << "[SQL] " << sql << endl;   /* 日志 */
 
         WFMySQLTask* mysqlTask = WFTaskFactory::create_mysql_task(
@@ -168,7 +170,7 @@ int main()
             kw::id = "UserService1",
             kw::name = "UserService",
             kw::address = "127.0.0.1",
-            kw::port = 1314,
+            kw::port = 1414,
             kw::check = TtlCheck(std::chrono::seconds{ 10 })
         );
 

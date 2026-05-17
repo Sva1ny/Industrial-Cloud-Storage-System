@@ -3,13 +3,14 @@
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 #include <nlohmann/json.hpp>
 #include "OssManager.h"
+#include "Config.h"
 
 using namespace std;
 using namespace AmqpClient;
 
 int main()
 {
-    string uri = "amqp://guest:guest@localhost:5672/%2f";
+    string uri = rabbitmq_url();
     const string& q = "oss.queue";
 
     Channel::ptr_t channel = Channel::CreateFromUri(uri);
@@ -30,7 +31,7 @@ int main()
 #ifdef DEBUG
             cout << "object: " << object << ", file: " << file << endl;
 #endif
-            if (!oss->upload_object("peanutixx-oss-demo", object, file)) {
+            if (!oss->upload_object("my-cloud-disk-test", object, file)) {
                 cerr << "Error: upload failed! object: " << object 
                      << ", file: " << file << endl;
             }

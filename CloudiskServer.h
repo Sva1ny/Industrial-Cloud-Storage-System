@@ -32,6 +32,7 @@ private:
     void register_fileupload_module();
     void register_filelist_module();
     void register_filedownload_module();
+    void register_filedelete_module();
 private:
     // 名字中最好不要带具体的实现细节
     // 方便以后修改具体的实现

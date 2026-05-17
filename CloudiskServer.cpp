@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <nlohmann/json.hpp>
 #include <iostream>
+#include <cctype>
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 
 #include "CloudiskServer.h"
@@ -17,6 +18,16 @@
 #include "OssManager.h"
 #include "UserService.srpc.h"
 #include "UserService.pb.h"
+#include "Util.h"
+#include "Config.h"
+#include "backend/src/util/Logger.h"
+#include "backend/src/search/InvertedIndex.h"
+#include "backend/src/handler/AuthHandler.h"
+#include "backend/src/handler/FileHandler.h"
+#include "backend/src/handler/TrashHandler.h"
+#include "backend/src/handler/ShareHandler.h"
+#include "backend/src/handler/SearchHandler.h"
+#include "backend/src/handler/FavoriteHandler.h"
 
 using namespace std;
 using namespace wfrest;
@@ -24,9 +35,72 @@ using namespace protocol;
 using namespace std::placeholders;
 using namespace AmqpClient;
 
-static const std::string RABBITMQ_URL = "amqp://guest:guest@localhost:5672/%2f";
-static const string MYSQL_URL = "mysql://root:1234@localhost/test";
+static const std::string RABBITMQ_URL = rabbitmq_url();
+static const string MYSQL_URL = mysql_url();
 static const int RETRY_MAX = 3;
+
+// URL 解码：将 %XX 转换为对应的字符
+static string url_encode(const string& src)
+{
+    string result;
+    for (char c : src) {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+            result += c;
+        else {
+            char buf[4];
+            snprintf(buf, sizeof(buf), "%%%02X", (unsigned char)c);
+            result += buf;
+        }
+    }
+    return result;
+}
+
+static string url_decode(const string& src)
+{
+    string result;
+    result.reserve(src.size());
+    for (size_t i = 0; i < src.size(); ++i) {
+        if (src[i] == '%' && i + 2 < src.size()) {
+            unsigned int c;
+            sscanf(src.c_str() + i + 1, "%2x", &c);
+            result += static_cast<char>(c);
+            i += 2;
+        } else {
+            result += src[i];
+        }
+    }
+    return result;
+}
+
+// 通过 Consul 发现 UserService 地址
+// 返回 (ip, port)，失败时返回 ("", 0)
+static pair<string, unsigned short> discover_user_service()
+{
+    string ip;
+    unsigned short port = 0;
+    WFFacilities::WaitGroup waitGroup { 1 };
+    string consulURL = "http://127.0.0.1:8500/v1/health/service/UserService?passing=true";
+    WFHttpTask* consulTask = WFTaskFactory::create_http_task(consulURL, 3, 3, [&](WFHttpTask* task)
+    {
+        if (task->get_state() != WFT_STATE_SUCCESS) {
+            waitGroup.done();
+            return ;
+        }
+        HttpResponse* response = task->get_resp();
+        string body = HttpUtil::decode_chunked_body(response);
+        nlohmann::json data = nlohmann::json::parse(body);
+        if (data.size() == 0) {
+            waitGroup.done();
+            return ;
+        }
+        ip = data[0]["Service"]["Address"];
+        port = data[0]["Service"]["Port"];
+        waitGroup.done();
+    });
+    consulTask->start();
+    waitGroup.wait();
+    return { ip, port };
+}
 
 void CloudiskServer::register_modules()
 {
@@ -38,10 +112,20 @@ void CloudiskServer::register_modules()
     register_fileupload_module();
     register_filelist_module();
     register_filedownload_module();
+    register_filedelete_module();
+
+    // Phase 0+: 新的模块化 API 端点
+    AuthHandler::register_routes(m_server);
+    FileHandler::register_routes(m_server);
+    TrashHandler::register_routes(m_server);
+    ShareHandler::register_routes(m_server);
+    SearchHandler::register_routes(m_server);
+    FavoriteHandler::register_routes(m_server);
 }
 
 void CloudiskServer::register_static_resources_module()
 {
+
     m_server.GET("/user/signup", [](const HttpReq *, HttpResp * resp){
         resp->File("static/view/signup.html");
     });
@@ -56,6 +140,41 @@ void CloudiskServer::register_static_resources_module()
 
     m_server.GET("/static/js/auth.js", [](const HttpReq *, HttpResp * resp){
         resp->File("static/js/auth.js");
+    });
+
+    // Vue 3 SPA
+    m_server.GET("/web", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/index.html");
+    });
+    m_server.GET("/web/", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/index.html");
+    });
+    m_server.GET("/web/css/app.css", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/css/app.css");
+    });
+    m_server.GET("/web/js/api.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/api.js");
+    });
+    m_server.GET("/web/js/store.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/store.js");
+    });
+    m_server.GET("/web/js/utils.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/utils.js");
+    });
+    m_server.GET("/web/js/app.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/app.js");
+    });
+    m_server.GET("/web/js/components/FileToolbar.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/components/FileToolbar.js");
+    });
+    m_server.GET("/web/js/components/FileTable.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/components/FileTable.js");
+    });
+    m_server.GET("/web/js/views/AuthView.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/views/AuthView.js");
+    });
+    m_server.GET("/web/js/views/DashboardView.js", [](const HttpReq *, HttpResp *resp){
+        resp->File("web/js/views/DashboardView.js");
     });
 
     m_server.GET("/static/img/avatar.jpeg", [](const HttpReq *, HttpResp * resp){
@@ -99,41 +218,14 @@ void CloudiskServer::register_signup_module()
         }
 
         // 3. 访问Consul获取服务的Address和Port
-        // Consul: http://localhost:8500/v1/agent/service/{serviceId}
-        string ip;
-        unsigned short port = 0;
-        // [注]: 通过waitGroup实现同步操作在workflow中不是一种很好的方式
-        // 一种更好的方式是将 consulTask 也放到当前序列中
-        WFFacilities::WaitGroup waitGroup { 1 };
-        string consulURL = "http://127.0.0.1:8500/v1/health/service/UserService?passing=true";
-        WFHttpTask* consulTask = WFTaskFactory::create_http_task(consulURL, 3, 3, [&](WFHttpTask* task)
-        {
-            if (task->get_state() != WFT_STATE_SUCCESS) {
-                waitGroup.done();
-                return ;
-            }
-            // 获取请求体
-            HttpResponse* response = task->get_resp();
-            // 如果有多个健康实例，Consul会分块传输
-            string body = HttpUtil::decode_chunked_body(response);  
-            nlohmann::json data = nlohmann::json::parse(body);
-            if (data.size() == 0) {
-                return ;
-            }
-            ip = data[0]["Service"]["Address"];
-            port = data[0]["Service"]["Port"];
-            waitGroup.done();
-        });
-        consulTask->start();
-        waitGroup.wait();     
-
+        auto [ip, port] = discover_user_service();
         if (ip == "" || port == 0) {
             resp->set_status(HttpStatusInternalServerError);
             resp->String("<html>500 Internal Server Error</html>");
             return ;
         }
 
-        // 3.校验通过后，远程同步调用UserService的sign_up()方法
+        // 4.校验通过后，远程同步调用UserService的sign_up()方法
         UserService::SRPCClient client{ ip.c_str(), port };
         // 设置请求
         UserRequest request;
@@ -187,34 +279,7 @@ void CloudiskServer::register_signin_module()
         }
 
         // 3. 访问Consul获取服务的Address和Port
-        // Consul: http://localhost:8500/v1/agent/service/{serviceId}
-        string ip;
-        unsigned short port = 0;
-        // [注]: 通过waitGroup实现同步操作在workflow中不是一种很好的方式
-        // 一种更好的方式是将 consulTask 也放到当前序列中
-        WFFacilities::WaitGroup waitGroup { 1 };
-        string consulURL = "http://127.0.0.1:8500/v1/health/service/UserService?passing=true";
-        WFHttpTask* consulTask = WFTaskFactory::create_http_task(consulURL, 3, 3, [&](WFHttpTask* task)
-        {
-            if (task->get_state() != WFT_STATE_SUCCESS) {
-                waitGroup.done();
-                return ;
-            }
-            // 获取请求体
-            HttpResponse* response = task->get_resp();
-            // 如果有多个健康实例，Consul会分块传输
-            string body = HttpUtil::decode_chunked_body(response);  
-            nlohmann::json data = nlohmann::json::parse(body);
-            if (data.size() == 0) {
-                return ;
-            }
-            ip = data[0]["Service"]["Address"];
-            port = data[0]["Service"]["Port"];
-            waitGroup.done();
-        });
-        consulTask->start();
-        waitGroup.wait();     
-
+        auto [ip, port] = discover_user_service();
         if (ip == "" || port == 0) {
             resp->set_status(HttpStatusInternalServerError);
             resp->String("<html>500 Internal Server Error</html>");
@@ -241,6 +306,7 @@ void CloudiskServer::register_signin_module()
 
             nlohmann::json json;
             json["data"] = data;
+            resp->headers["Content-Type"] = "application/json; charset=utf-8";
             resp->String(json.dump());
         } else {
             resp->set_status(HttpStatusBadRequest);
@@ -277,6 +343,7 @@ void CloudiskServer::register_userinfo_module()
 
         nlohmann::json json;
         json["data"] = data;
+        resp->headers["Content-Type"] = "application/json; charset=utf-8";
         resp->String(json.dump(2));
     });
 }
@@ -309,6 +376,15 @@ void CloudiskServer::register_fileupload_module()
         Form& form = req->form();
         for (const auto& [_, file] : form) {
             const auto& [filename, content] = file;
+
+            // 文件大小校验（最大 100MB）
+            const size_t MAX_FILE_SIZE = 100 * 1024 * 1024;
+            if (content.size() > MAX_FILE_SIZE) {
+                resp->set_status(HttpStatusBadRequest);
+                resp->String("<html>400 File too large (max 100MB)</html>");
+                return ;
+            }
+
             string hashcode = CryptoUtil::generate_hashcode(content.c_str(), content.size());
             
             string directory = "files/" + user.username + "/";  /* 为每个用户单独创建一个文件夹 */
@@ -334,34 +410,119 @@ void CloudiskServer::register_fileupload_module()
             close(fd);
 
             // [OSS备份]: 异步备份，往消息队列中写入一条消息
-            Channel::ptr_t channel = Channel::CreateFromUri(RABBITMQ_URL);
-            // 构建消息
-            nlohmann::json obj;
-            obj["object"] = filepath;
-            obj["file"] = filepath;
-            BasicMessage::ptr_t message = BasicMessage::Create(obj.dump());
-            // 发送消息
-            string exchange = "oss.direct";
-            string routingKey = "oss";
-            channel->BasicPublish(exchange, routingKey, message);
+            try {
+                Channel::ptr_t channel = Channel::CreateFromUri(RABBITMQ_URL);
+                nlohmann::json obj;
+                obj["object"] = filepath;
+                obj["file"] = filepath;
+                BasicMessage::ptr_t message = BasicMessage::Create(obj.dump());
+                string exchange = "oss.direct";
+                string routingKey = "oss";
+                channel->BasicPublish(exchange, routingKey, message);
+            } catch (std::exception& e) {
+                cerr << "[WARN] RabbitMQ publish failed: " << e.what() << endl;
+            }
 
             // 写`tbl_file`表
             string sql = "REPLACE INTO tbl_file (uid, filename, hashcode, size) VALUES ("
                 + std::to_string(user.id) + ", '"
-                + filename + "', '"
+                + mysql_escape(filename) + "', '"
                 + hashcode + "', "
                 + std::to_string(content.size()) + ")";
 
             cout << "[SQL] " << sql << endl;
 
-            resp->MySQL(MYSQL_URL, sql, [resp](MySQLResultCursor* cursor)
+            // Archive old version + upsert into tbl_file_v2
+            std::string file_basename = PathUtil::base(filename);
+            std::string storage_path = "files/" + user.username + "/" + file_basename;
+            std::string archive_sql = "INSERT INTO tbl_file_history (file_id, version, hashcode, size, storage_path) "
+                                      "SELECT id, 0, hashcode, size, storage_path FROM tbl_file_v2 "
+                                      "WHERE uid = " + std::to_string(user.id) +
+                                      " AND filename = '" + mysql_escape(file_basename) +
+                                      "' AND parent_id = 0 AND tomb = 0 AND is_folder = 0";
+
+            resp->MySQL(MYSQL_URL, archive_sql, [resp, sql, uid = user.id, file_basename, hashcode, content_size = content.size(), storage_path](MySQLResultCursor*)
             {
-                if (cursor->get_cursor_status() != MYSQL_STATUS_OK) {
-                    resp->set_status(HttpStatusInternalServerError);
-                    resp->String("<html>500 Internal Server Error");
-                    return ;
-                }
-                resp->Redirect("/static/view/home.html", HttpStatusSeeOther);
+                // REPLACE INTO tbl_file (legacy)
+                resp->MySQL(MYSQL_URL, sql, [resp, uid, file_basename, hashcode, content_size, storage_path](MySQLResultCursor* cursor2)
+                {
+                    // Upsert into tbl_file_v2
+                    std::string v2_sql = "INSERT INTO tbl_file_v2 (uid, parent_id, filename, hashcode, size, storage_path) "
+                                        "VALUES (" + std::to_string(uid) + ", 0, '"
+                                        + mysql_escape(file_basename) + "', '"
+                                        + hashcode + "', "
+                                        + std::to_string(content_size) + ", '"
+                                        + storage_path + "') "
+                                        "ON DUPLICATE KEY UPDATE hashcode = VALUES(hashcode), "
+                                        "size = VALUES(size), storage_path = VALUES(storage_path)";
+
+                    resp->MySQL(MYSQL_URL, v2_sql, [resp, uid, file_basename, storage_path](MySQLResultCursor*)
+                    {
+                        // Get file_id for indexing
+                        std::string id_sql = "SELECT id FROM tbl_file_v2 WHERE uid = "
+                            + std::to_string(uid) + " AND filename = '"
+                            + mysql_escape(file_basename) + "' AND parent_id = 0 AND tomb = 0";
+
+                        resp->MySQL(MYSQL_URL, id_sql, [resp, storage_path](MySQLResultCursor *cursor)
+                        {
+                            int64_t file_id = 0;
+                            if (cursor->get_cursor_status() == MYSQL_STATUS_GET_RESULT) {
+                                std::vector<MySQLCell> row;
+                                if (cursor->fetch_row(row))
+                                    file_id = row[0].as_ulonglong();
+                            }
+
+                            if (file_id > 0) {
+                                // Index text content
+                                auto index_data = InvertedIndex::prepare_index(storage_path, file_id);
+                                if (!index_data.insert_text_sql.empty()) {
+                                    resp->MySQL(MYSQL_URL, index_data.delete_index_sql, [resp, index_data](MySQLResultCursor*)
+                                    {
+                                        resp->MySQL(MYSQL_URL, index_data.insert_text_sql, [resp, index_data](MySQLResultCursor*)
+                                        {
+                                            // Insert index entries (batch into one query for simplicity)
+                                            if (!index_data.insert_index_sqls.empty()) {
+                                                // Build multi-row INSERT
+                                                std::string batch_sql = "INSERT INTO tbl_inverted_index (term, file_id, freq, positions) VALUES ";
+                                                for (size_t i = 0; i < index_data.insert_index_sqls.size(); i++) {
+                                                    // Each sql is "INSERT INTO tbl_inverted_index ... VALUES ('term', 26, 1, '0')"
+                                                    // Extract the VALUES part
+                                                    auto val_pos = index_data.insert_index_sqls[i].find("VALUES");
+                                                    if (val_pos != std::string::npos) {
+                                                        if (i > 0) batch_sql += ",";
+                                                        batch_sql += index_data.insert_index_sqls[i].substr(val_pos + 6);
+                                                    }
+                                                }
+
+                                                resp->MySQL(MYSQL_URL, batch_sql, [resp](MySQLResultCursor*)
+                                                {
+                                                    nlohmann::json json;
+                                                    json["success"] = true;
+                                                    json["redirect"] = "/static/view/home.html";
+                                                    resp->headers["Content-Type"] = "application/json; charset=utf-8";
+                                                    resp->String(json.dump());
+                                                });
+                                            } else {
+                                                nlohmann::json json;
+                                                json["success"] = true;
+                                                json["redirect"] = "/static/view/home.html";
+                                                resp->headers["Content-Type"] = "application/json; charset=utf-8";
+                                                resp->String(json.dump());
+                                            }
+                                        });
+                                    });
+                                    return;
+                                }
+                            }
+
+                            nlohmann::json json;
+                            json["success"] = true;
+                            json["redirect"] = "/static/view/home.html";
+                            resp->headers["Content-Type"] = "application/json; charset=utf-8";
+                            resp->String(json.dump());
+                        });
+                    });
+                });
             });
         }
     });
@@ -393,6 +554,7 @@ void filelist_callback(HttpResp* resp, MySQLResultCursor* cursor)
         file["LastUpdated"] = record[4].as_datetime();
         result.push_back(std::move(file));
     }
+    resp->headers["Content-Type"] = "application/json; charset=utf-8";
     resp->String(result.dump(2));
 }
 
@@ -401,27 +563,42 @@ void CloudiskServer::register_filelist_module()
     m_server.POST("/file/query", [](const HttpReq* req, HttpResp* resp)
     {
         // 1. 解析请求
-        string username = req->query("username");    
+        string username = req->query("username");
         string token = req->query("token");
         string limit = req->form_kv()["limit"];
+        string offset = req->form_kv()["offset"];
 
-        // 2. 校验请求参数 (这里只是简单输出)
-#ifdef DEBUG
-        cout << "username: " << username
-            << ", token: " << token
-            << ", limit: " << limit << endl;
-#endif
-        // 3. 校验Token
+        // 2. 校验Token
         User user;
         if (!CryptoUtil::verify_token(token, user)) {
             resp->set_status(HttpStatusUnauthorized);
             resp->String("<html>401 Unauthorized</html>");
             return ;
         }
-        // 4. 构建SQL语句，查询数据库
+        // 3. 校验 limit 和 offset 为数字
+        auto parse_num = [](const string& s, int default_val) -> int {
+            if (s.empty()) return default_val;
+            int n = 0;
+            for (char c : s) {
+                if (!isdigit(c)) return -1;
+                n = n * 10 + (c - '0');
+            }
+            return n;
+        };
+        int limit_num = parse_num(limit, 15);
+        int offset_num = parse_num(offset, 0);
+        if (limit_num < 0 || offset_num < 0) {
+            resp->set_status(HttpStatusBadRequest);
+            resp->String("<html>400 Bad Request</html>");
+            return;
+        }
+        // 限制最大查询量
+        if (limit_num > 100) limit_num = 100;
+
         string sql = "SELECT filename, hashcode, size, created_at, last_update FROM tbl_file WHERE uid="
             + std::to_string(user.id)
-            + " LIMIT " + limit;
+            + " LIMIT " + std::to_string(limit_num)
+            + " OFFSET " + std::to_string(offset_num);
 
         cout << "[SQL] " << sql << endl;
 
@@ -440,18 +617,50 @@ void CloudiskServer::register_filedownload_module()
 {
     m_server.GET("/file/download", [](const HttpReq* req, HttpResp* resp)
     {
-       // 1. 获取请求参数
-       const string& filename = req->query("filename");
-       const string& filehash = req->query("filehash");
-       const string& username = req->query("username");
-       const string& token = req->query("token");
-       // 2. 校验请求参数 (这里只是打印)
-#ifdef DEBUG
-        cout << "filename: " << filename
-            << ", filehash: " << filehash
-            << ", username: " << username
-            << ", token: " << token << endl;
-#endif
+        // 1. 获取请求参数
+        string filename = url_decode(req->query("filename"));
+        const string& token = req->query("token");
+
+        // 2. 验证 token，用 token 中的 username 而非 URL 中的
+        User user;
+        if (!CryptoUtil::verify_token(token, user)) {
+            resp->set_status(HttpStatusUnauthorized);
+            resp->headers["Content-Type"] = "application/json; charset=utf-8";
+            resp->String(R"({"success":false,"error":"unauthorized"})");
+            return;
+        }
+
+        // 3. 文件路径使用 token 中的用户名（安全）
+        string filepath = "files/" + user.username + "/" + PathUtil::base(filename);
+
+        // 4. 验证文件存在
+        if (access(filepath.c_str(), F_OK) != 0) {
+            resp->set_status(HttpStatusNotFound);
+            resp->headers["Content-Type"] = "application/json; charset=utf-8";
+            resp->String(R"({"success":false,"error":"file not found"})");
+            return;
+        }
+
+        // 5. 兼容非 ASCII 文件名的 Content-Disposition（RFC 5987）
+        string disposition = "attachment; filename=\""
+            + url_encode(PathUtil::base(filename)) + "\""
+            "; filename*=UTF-8''" + url_encode(PathUtil::base(filename));
+        resp->set_header_pair("Content-Disposition", disposition);
+        resp->File(filepath);
+    });
+}
+
+/*********************************************************************************
+ *                               删除文件                                        *
+ *********************************************************************************/
+void CloudiskServer::register_filedelete_module()
+{
+    m_server.POST("/file/delete", [](const HttpReq* req, HttpResp* resp)
+    {
+        string username = req->query("username");
+        string token = req->query("token");
+        string filename = url_decode(req->form_kv()["filename"]);
+
         User user;
         if (!CryptoUtil::verify_token(token, user)) {
             resp->set_status(HttpStatusUnauthorized);
@@ -459,11 +668,30 @@ void CloudiskServer::register_filedownload_module()
             return ;
         }
 
+        // 删除本地文件
         string filepath = "files/" + user.username + "/" + PathUtil::base(filename);
-#ifdef DEBUG
-        cout << "filepath: " << filepath << endl;
-#endif
-        resp->set_header_pair("Content-Disposition", "attachment; filename=" + filename);
-        resp->File(filepath);
+        if (unlink(filepath.c_str()) != 0 && errno != ENOENT) {
+            resp->set_status(HttpStatusInternalServerError);
+            resp->String("<html>500 Internal Server Error</html>");
+            return ;
+        }
+
+        // 删除数据库记录
+        string sql = "DELETE FROM tbl_file WHERE uid="
+            + std::to_string(user.id)
+            + " AND filename='" + mysql_escape(filename) + "'";
+
+        resp->MySQL(MYSQL_URL, sql, [resp](MySQLResultCursor* cursor)
+        {
+            nlohmann::json json;
+            if (cursor->get_cursor_status() != MYSQL_STATUS_OK) {
+                json["success"] = false;
+                json["error"] = "database error";
+            } else {
+                json["success"] = true;
+            }
+            resp->headers["Content-Type"] = "application/json; charset=utf-8";
+            resp->String(json.dump());
+        });
     });
 }

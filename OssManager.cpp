@@ -1,4 +1,5 @@
 #include "OssManager.h"
+#include "Config.h"
 
 using namespace std;
 
@@ -37,10 +38,10 @@ OssManager::OssManager()
     // 1. 初始化SDK
     AlibabaCloud::OSS::InitializeSdk(); 
 
-    string endpoint = "oss-cn-wuhan-lr.aliyuncs.com";
-    string region = "cn-wuhan";
-    string accessKeyId = "LTAI5t7SqTtbX4UcwBGnWRuG";
-    string accessKeySecret = "u32JnGRv5zgWf5y0nDZcOXlrlzzepv";
+    string endpoint = oss_endpoint();
+    string region = oss_region();
+    string accessKeyId = oss_access_key();
+    string accessKeySecret = oss_secret_key();
     AlibabaCloud::OSS::ClientConfiguration conf;
     m_client = std::make_unique<AlibabaCloud::OSS::OssClient>(endpoint, accessKeyId, accessKeySecret, conf);
             
